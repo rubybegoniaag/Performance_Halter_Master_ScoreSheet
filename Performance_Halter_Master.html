@@ -28,12 +28,19 @@
             background-color: #e0e0e0;
             pointer-events: none;
         }
+        .error {
+            border: 2px solid red;
+        }
     </style>
 </head>
 <body>
     <h1>Performance Halter Master Score Sheet</h1>
     <form id="scoreSheetForm">
-        <p>Class #: <input type="text" name="classNumber"> &nbsp;&nbsp;&nbsp; Class Name: <input type="text" name="className"> &nbsp;&nbsp;&nbsp; Total Entries: <input type="number" name="totalEntries" min="1" oninput="generateRows(this.value)"></p>
+        <p>
+            Class #: <input type="text" name="classNumber"> &nbsp;&nbsp;&nbsp;
+            Class Name: <input type="text" name="className"> &nbsp;&nbsp;&nbsp;
+            Total Entries: <input type="number" name="totalEntries" id="totalEntries" oninput="generateRows(this.value)">
+        </p>
         <p>Judge: <input type="text" name="judge"></p>
         <p>Is Call Judge? 
             <input type="radio" name="isCallJudge" value="yes" required> Yes
@@ -44,8 +51,8 @@
             <input type="radio" name="horseType" value="halfArabian" onclick="toggleArabianType()"> Half-Arabian/Anglo-Arabian Performance Halter
         </p>
     </form>
- 
-   <table>
+
+    <table>
         <thead>
             <tr>
                 <th>Entry#</th>
@@ -66,97 +73,62 @@
         </tbody>
     </table>
 
-    <button onclick="calculatePlacings()">Calculate Placings</button>
-
-    <h2>Tiebreakers</h2>
-    <table class="tiebreaker-table">
-        <thead>
-            <tr>
-                <th>Arabian Performance Halter</th>
-                <th>Half-Arabian/Anglo-Arabian Performance Halter</th>
-                <th>Tie Entry# Winner</th>
-                <th>Tie High Score</th>
-                <th>Tie Entry# Loser</th>
-                <th>Tie Low Score</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td><input type="checkbox" disabled> Athletic Structure</td>
-                <td><input type="checkbox" disabled> Athletic Structure</td>
-                <td id="athleticStructureWinner"></td>
-                <td id="athleticStructureHighScore"></td>
-                <td id="athleticStructureLoser"></td>
-                <td id="athleticStructureLowScore"></td>
-            </tr>
-            <tr>
-                <td><input type="checkbox" disabled> Breed Type</td>
-                <td><input type="checkbox" disabled> Quality/Balance/Substance</td>
-                <td id="breedTypeWinner"></td>
-                <td id="breedTypeHighScore"></td>
-                <td id="breedTypeLoser"></td>
-                <td id="breedTypeLowScore"></td>
-            </tr>
-            <tr>
-                <td><input type="checkbox" disabled> Quality/Balance/Substance</td>
-                <td><input type="checkbox" disabled> Conformation</td>
-                <td id="qualityBalanceWinner"></td>
-                <td id="qualityBalanceHighScore"></td>
-                <td id="qualityBalanceLoser"></td>
-                <td id="qualityBalanceLowScore"></td>
-            </tr>
-            <tr>
-                <td><input type="checkbox" disabled> Conformation</td>
-                <td><input type="checkbox" disabled> Movement</td>
-                <td id="conformationWinner"></td>
-                <td id="conformationHighScore"></td>
-                <td id="conformationLoser"></td>
-                <td id="conformationLowScore"></td>
-            </tr>
-            <tr>
-                <td><input type="checkbox" disabled> Movement</td>
-                <td><input type="checkbox" disabled> Call Judge</td>
-                <td id="movementWinner"></td>
-                <td id="movementHighScore"></td>
-                <td id="movementLoser"></td>
-                <td id="movementLowScore"></td>
-            </tr>
-            <tr>
-                <td><input type="checkbox" disabled> Call Judge</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-        </tbody>
-    </table>
-
-    <p>Scorer's Signature: ________________________</p>
+    <button type="button" onclick="addRow()">Add Row</button>
+    <button type="button" onclick="removeRow()">Remove Row</button>
+    <button onclick="exportToCSV()">Export as CSV</button>
+    <div id="error-message" style="color: red; font-size: 14px;"></div>
 
     <script>
-        function generateRows(totalEntries) {
+        function addRow() {
             const tbody = document.getElementById('scoreRows');
-            tbody.innerHTML = ''; // Clear existing rows
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><input type="text" name="entryNumber" size="3"></td>
+                <td><input type="number" name="athleticStructure" step="0.5" min="10" max="20" onblur="validateInput(this)" oninput="calculateScores(this)"></td>
+                <td><input type="number" name="arabianType" step="0.5" min="10" max="20" onblur="validateInput(this)" oninput="calculateScores(this)"></td>
+                <td><input type="number" name="qualityBalanceSubstance" step="0.5" min="10" max="20" onblur="validateInput(this)" oninput="calculateScores(this)"></td>
+                <td><input type="number" name="neckShoulder" step="0.5" min="10" max="20" onblur="validateInput(this)" oninput="calculateScores(this)"></td>
+                <td><input type="number" name="backLoinHip" step="0.5" min="10" max="20" onblur="validateInput(this)" oninput="calculateScores(this)"></td>
+                <td><input type="number" name="legsFeet" step="0.5" min="10" max="20" onblur="validateInput(this)" oninput="calculateScores(this)"></td>
+                <td><input type="number" name="movement" step="0.5" min="10" max="20" onblur="validateInput(this)" oninput="calculateScores(this)"></td>
+                <td><input type="number" name="penalties" step="1" min="0" max="3" onblur="validatePenalty(this)" oninput="calculateScores(this)"></td>
+                <td><input type="number" name="totalScore" readonly></td>
+                <td><input type="text" name="placing" size="3"></td>
+            `;
+            tbody.appendChild(row);
+        }
 
-            for (let i = 0; i < totalEntries; i++) {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><input type="text" name="entryNumber" size="3"></td>
-                    <td><input type="number" name="athleticStructure" step="0.5" min="10" max="20" onblur="validateInput(this)" oninput="calculateScores(this)"></td>
-                    <td><input type="number" name="arabianType" step="0.5" min="10" max="20" onblur="validateInput(this)" oninput="calculateScores(this)"></td>
-                    <td><input type="number" name="qualityBalanceSubstance" step="0.5" min="10" max="20" onblur="validateInput(this)" oninput="calculateScores(this)"></td>
-                    <td><input type="number" name="neckShoulder" step="0.5" min="10" max="20" onblur="validateInput(this)" oninput="calculateScores(this)"></td>
-                    <td><input type="number" name="backLoinHip" step="0.5" min="10" max="20" onblur="validateInput(this)" oninput="calculateScores(this)"></td>
-                    <td><input type="number" name="legsFeet" step="0.5" min="10" max="20" onblur="validateInput(this)" oninput="calculateScores(this)"></td>
-                    <td><input type="number" name="movement" step="0.5" min="10" max="20" onblur="validateInput(this)" oninput="calculateScores(this)"></td>
-                    <td><input type="number" name="penalties" step="1" min="0" max="3" onblur="validatePenalty(this)" oninput="calculateScores(this)"></td>
-                    <td><input type="number" name="totalScore" readonly></td>
-                    <td><input type="text" name="placing" size="3"></td>
-                `;
-                tbody.appendChild(row);
+        function removeRow() {
+            const tbody = document.getElementById('scoreRows');
+            if (tbody.rows.length > 0) {
+                tbody.deleteRow(-1);
             }
-            toggleArabianType(); // Ensure correct field state on row generation
+        }
+
+        function validateInput(inputElement) {
+            const value = parseFloat(inputElement.value);
+            const errorMsg = document.getElementById('error-message');
+            if (value < 10 || value > 20 || (value * 10) % 5 !== 0) {
+                errorMsg.textContent = "Please enter a number between 10 and 20, in increments of 0.5.";
+                inputElement.classList.add('error');
+                inputElement.value = '';
+            } else {
+                errorMsg.textContent = '';
+                inputElement.classList.remove('error');
+            }
+        }
+
+        function validatePenalty(inputElement) {
+            const value = parseInt(inputElement.value);
+            const errorMsg = document.getElementById('error-message');
+            if (value < 0 || value > 3) {
+                errorMsg.textContent = "Please enter a penalty between 0 and 3.";
+                inputElement.classList.add('error');
+                inputElement.value = '';
+            } else {
+                errorMsg.textContent = '';
+                inputElement.classList.remove('error');
+            }
         }
 
         function calculateScores(inputElement) {
@@ -177,71 +149,21 @@
             totalScoreField.value = total;
         }
 
-        function toggleArabianType() {
-            const horseType = document.querySelector('input[name="horseType"]:checked').value;
-            const arabianTypeFields = document.querySelectorAll('input[name="arabianType"]');
-
-            arabianTypeFields.forEach(field => {
-                if (horseType === 'halfArabian') {
-                    field.classList.add('disabled');
-                    field.value = '';
-                } else {
-                    field.classList.remove('disabled');
-                }
-            });
-        }
-
-        function validateInput(inputElement) {
-            let value = parseFloat(inputElement.value);
-
-            // Check if the value is within the range and adheres to the step
-            if (value < 10 || value > 20 || (value * 10) % 5 !== 0) {
-                alert("Please enter a number between 10 and 20, in increments of 0.5.");
-                inputElement.value = '';Clear the invalid input
-            }
-        }
-
-        function validatePenalty(inputElement) {
-            let value = parseInt(inputElement.value);
-
-            // Check if the value is within the allowed penalties
-            if (value < 0 || value > 3) {
-                alert("Please enter a penalty between 0 and 3.");
-                inputElement.value = ''; Clear the invalid input
-            }
-        }
-
-        function calculatePlacings() {
+        function exportToCSV() {
             const rows = Array.from(document.querySelectorAll('#scoreRows tr'));
-            const horseType = document.querySelector('input[name="horseType"]:checked').value;
-            const tiebreakers = horseType === 'arabian' ? ['athleticStructure', 'arabianType', 'qualityBalanceSubstance', 'neckShoulder', 'movement'] : ['athleticStructure', 'qualityBalanceSubstance', 'neckShoulder', 'movement'];
+            let csvContent = "data:text/csv;charset=utf-8,";
 
-            rows.sort((a, b) => {
-                const scoreA = parseFloat(a.querySelector('input[name="totalScore"]').value) || 0;
-                const scoreB = parseFloat(b.querySelector('input[name="totalScore"]').value) || 0;
-
-                if (scoreA !== scoreB) return scoreB - scoreA;
-
-                // Tiebreaker logic
-                for (const tiebreaker of tiebreakers) {
-                    const scoreA = parseFloat(a.querySelector(`input[name="${tiebreaker}"]`).value) || 0;
-                    const scoreB = parseFloat(b.querySelector(`input[name="${tiebreaker}"]`).value) || 0;
-                    if (scoreA !== scoreB) {
-                        document.getElementById(`${tiebreaker}Winner`).innerText = a.querySelector('input[name="entryNumber"]').value;
-                        document.getElementById(`${tiebreaker}HighScore`).innerText = scoreA;
-                        document.getElementById(`${tiebreaker}Loser`).innerText = b.querySelector('input[name="entryNumber"]').value;
-                        document.getElementById(`${tiebreaker}LowScore`).innerText = scoreB;
-                        document.querySelector(`input[type="checkbox"][disabled]`).checked = true;
-                        return scoreB - scoreA;
-                    }
-                }
-
-                return 0;
+            rows.forEach(row => {
+                const cols = Array.from(row.querySelectorAll('input')).map(input => input.value);
+                csvContent += cols.join(",") + "\n";
             });
 
-            rows.forEach((row, index) => {
-                row.querySelector('input[name="placing"]').value = index + 1;
-            });
+            const link = document.createElement('a');
+            link.setAttribute('href', encodeURI(csvContent));
+            link.setAttribute('download', 'score_sheet.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
     </script>
 </body>
